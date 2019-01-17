@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char *readFromUserFile(){
+#define DATAOFFSET 9473
+#define BITMAPOFFSET 1281
+
+char *readFromUserFile() {
     char name[30];
     printf("Podaj nazwe pliku: ");
     scanf("%s", name);
     FILE *file = fopen(name, "rb");
-    if(file==NULL){
+    if(file==NULL) {
         printf("Nie moge otworzyc takiego pliku!\n");
         return NULL;
     }
@@ -20,8 +23,7 @@ char *readFromUserFile(){
     fclose(file);
     return content;
 }
-
-void makeEmptyDisk(){
+void makeEmptyDisk() {
     //Jednostka alokacji (ja) = 64B
     //partycja zawiera 2^16=65336=64Kja  == 4096KB=4MB
     FILE *disk = fopen("MyVirtualDisc", "wb");
@@ -38,9 +40,9 @@ void makeEmptyDisk(){
     //razem rozmiar: 4203776B
     fclose(disk);
 }
-int addFileToDisk(char *content, int length, char *fileName){ //napisac!!!!!
+int addFileToDisk(char *content, int length, char *fileName) { //napisac!!!!!
     FILE *disk = fopen("MyVirtualDisc", "wb");
-    if(disk==NULL){
+    if(disk==NULL) {
         printf("Nie udalo sie otworzyc dysku!\n");
         return 2;
     }
@@ -52,20 +54,93 @@ int addFileToDisk(char *content, int length, char *fileName){ //napisac!!!!!
     char bitmap[8192];
 
     fread(&fileQuantity, sizeof(char), 1, disk);
-    if(fileQuantity>=64){
+    if(fileQuantity>=64) {
         printf("Dysk pelny!\n");
         fclose(disk);
         return 3;
     }
     fread(allEncryptors, sizeof(char), 1280, disk);
 }
+int removeFileFromDisk(char *fileName){ //fileName to char[15] ///TODO: dopisac zmiane bitmapy
+    FILE *disk = fopen("MyVirtualDisc", "wb");
+    if(disk==NULL) {
+        printf("Nie udalo sie otworzyc dysku!\n");
+        return 2;
+    }
+    char fileQuantity, flags, name[15], *content, bitmap[8192];
+    unsigned short offset, size;
+    int foundFile = 0, encryptorNumber=0;
 
-char *readFileFromDisk(char *name){
+    fread(&fileQuantity, sizeof(char), 1, disk);
+    if((int)fileQuantity == 0) {
+        printf("Pusty dysk!\n");
+        return 2;
+    }
+
+    for(int i=0; i<64; ++i) {
+        fread(name, sizeof(char), 15, disk);
+        fread(&offset, sizeof(unsigned short), 1, disk);
+        fread(&size, sizeof(unsigned short), 1, disk);
+        fread(&flags, sizeof(char), 1, disk);
+        if((int)flags>=128 && searchName == name) { //znalazlem enkrytptor danego pliku
+            foundFile=1;
+            break;
+        }
+        encryptorNumber++;
+    }
+    if(foundFile==0){
+        printf("Nie ma takiego pliku na dysku!\n");
+        return 2;
+    }
+    //mam dane o pliku w zmiennych
+    //wyzerowac enkryptor, wezerowac dane bity BitMapy, zmniejszyc ilosc plikow
+    char zeroEncryptor[20];
+    for(int i=0; i<20; ++i) zeroEncryptor[i]=0;
+    fseek(disk, 1+encryptorNumber*20, 0);
+    fwrite(zeroEncryptor, sizeof(char), 20, disk); //zerowanie enkryptora
+
+    fseek(disk, 0, 0);
+    fileQuantity--;
+    fwrite(&fileQuantity, sizeof(char), 1, disk); //zmniejszenie ilosc plikow
+
 
 }
-void printFilesInDisk(){
+void readFileFromDisk(char *searchName, char *content, int *fileSize) { //przekazana nazwa ma byc char[15]; do wskaznika content zostanie wstwiony plik, do size bedzie wstawiony rozmiar pliku
+    content = NULL; //jesli nie znaleziono to content==NULL oraz fileSize==0
+    *fileSize=0;
     FILE *disk = fopen("MyVirtualDisc", "wb");
-    if(disk==NULL){
+    if(disk==NULL) {
+        printf("Nie udalo sie otworzyc dysku!\n");
+        return;
+    }
+    char fileQuantity, flags, name[15], *content;
+    unsigned short offset, size;
+
+    fread(&fileQuantity, sizeof(char), 1, disk);
+    if((int)fileQuantity == 0) {
+        printf("Pusty dysk!\n");
+        return;
+    }
+
+    for(int i=0; i<64; ++i) {
+        fread(name, sizeof(char), 15, disk);
+        fread(&offset, sizeof(unsigned short), 1, disk);
+        fread(&size, sizeof(unsigned short), 1, disk);
+        fread(&flags, sizeof(char), 1, disk);
+        if((int)flags>=128 && searchName == name) { //znalazlem enkrytptor danego pliku
+            fseek(disk, DATAOFFSET+(long)offset, 0);
+            content = malloc(sizeof(char)*size);
+            fileSize = size;
+            fread(content, sizeof(char), size, disk);
+            fclose(disk);
+            return;
+        }
+    }
+    fclose(disk);
+}
+void printFilesInDisk() {
+    FILE *disk = fopen("MyVirtualDisc", "wb");
+    if(disk==NULL) {
         printf("Nie udalo sie otworzyc dysku!\n");
         return;
     }
@@ -77,22 +152,22 @@ void printFilesInDisk(){
 
     fread(&fileQuantity, sizeof(char), 1, disk);
     printf("Ilosc plikow na dysku: %d\n", (int)fileQuantity);
-    if((int)fileQuantity==0){ //dysk pusty
+    if((int)fileQuantity==0) { //dysk pusty
         fclose(disk);
         return;
     }
-    for(int i=0; i<64; ++i){
+    for(int i=0; i<64; ++i) {
         fread(name, sizeof(char), 15, disk);
         fread(&offset, sizeof(unsigned short), 1, disk);
         fread(&size, sizeof(unsigned short), 1, disk);
         fread(&flags, sizeof(char), 1, disk);
-        if((int)flags>=128){ //plik istnieje (enkryptor) - najstarszy bit flagi=1 (flags>=128)
+        if((int)flags>=128) { //plik istnieje (enkryptor) - najstarszy bit flagi=1 (flags>=128)
             printf("Name: %s Size: %uB\n", name, size);
         }
     }
     fclose(disk);
 }
-int main(){
+int main() {
     /*char *c = readFromUserFile();
     printf("%s", c);
     if(c!=NULL)
