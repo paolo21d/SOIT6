@@ -125,7 +125,7 @@ int removeFileFromDisk(char *fileName) { //fileName to char[15] ///TODO: dopisac
         fread(&offset, sizeof(unsigned short), 1, disk);
         fread(&size, sizeof(unsigned short), 1, disk);
         fread(&flags, sizeof(char), 1, disk);
-        if((int)flags>=128 && searchName == name) { //znalazlem enkrytptor danego pliku
+        if((int)flags>=128 && fileName == name) { //znalazlem enkrytptor danego pliku
             foundFile=1;
             break;
         }
@@ -169,7 +169,7 @@ void readFileFromDisk(char *searchName, char *content, int *fileSize) { //przeka
         printf("Nie udalo sie otworzyc dysku!\n");
         return;
     }
-    char fileQuantity, flags, name[15], *content;
+    char fileQuantity, flags, name[15];
     unsigned short offset, size;
 
     fread(&fileQuantity, sizeof(char), 1, disk);
