@@ -1,0 +1,4 @@
+Plik2 jego dane i tak zeby przekroczyc dlugosc 64znakow
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
