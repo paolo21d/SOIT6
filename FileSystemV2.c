@@ -410,10 +410,21 @@ void comShowFileFromDisk(){
     clearEndLine(name);
     printFileFromDisk(name);
 }
-int main() {
+int main(int argc, char *argv[]) {
     /*makeEmptyDisk();
     printFilesInDisk();
     printBitMap();*/
+    if(argc>=2){
+        int option = atoi(argv[1]);
+        if(option==1) comCreateDisk();
+        else if(option==2) comCopyFileToDisk();
+        else if(option==3) comCopyFileFromDisk();
+        else if(option==4) printFilesInDisk();
+        else if(option==5) comRemoveFile();
+        else if(option==6) printBitMap();
+        else if(option==7) comShowFileFromDisk(); 
+        return 0;
+    }
 
     int whatDo=1;
     while(whatDo){
